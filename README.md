@@ -37,7 +37,8 @@ respecto al otro?
 
 `scripts/run_bioemu.sh` corre los pasos 2 y 3. Las rutas del script son las
 del servidor original; ajústalas antes de usarlo. El paso a paso completo, con
-entradas, salidas y tiempos, está en **[TUTORIAL.md](TUTORIAL.md)**.
+entradas, salidas y tiempos, está en **[TUTORIAL.md](TUTORIAL.md)**. Cómo funciona
+BioEmu por dentro está explicado en **[BIOEMU.md](BIOEMU.md)**.
 
 ## Resultados
 
@@ -71,6 +72,7 @@ minimización) y los centros de masa con los Cα.
 | `bioemu/lbpchey_model0.fasta` | Secuencia usada |
 | `visualizacion/ver_ensamble.pml` | Script de PyMOL |
 | `scripts/` | `run_bioemu.sh`, `analiza_ensamble.py` y `prepara_visualizacion.py` |
+| `BIOEMU.md` | Cómo funciona BioEmu por dentro, con referencias |
 | `TUTORIAL.md` | Cómo se ejecutó todo el pipeline, paso a paso |
 | `presentacion/` | Presentación sobre BioEmu y este caso (`.pptx` y `.pdf`) |
 
