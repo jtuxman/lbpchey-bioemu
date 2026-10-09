@@ -89,6 +89,34 @@ k-means, k = 3). Los intervalos son IC 95% por bootstrap:
 
 ![Energía libre por conformación](energias/energia_libre.png)
 
+**Superficie de energía libre.** El estilo es el de la Fig. 3 del artículo de BioEmu:
+F = −kT·ln p en kcal/mol, con curvas cada 0.5 kcal/mol. El artículo usa coordenadas
+TICA construidas con MD. Aquí no hay MD, así que los ejes son:
+- **Panel a:** los dos primeros componentes principales de la posición de CheY.
+- **Panel b:** la distancia entre los lóbulos y el giro de CheY respecto a AF3, medido
+  con signo sobre su eje principal de rotación.
+
+La densidad se suaviza con un kernel gaussiano, y por encima de 4 kcal/mol no hay datos
+suficientes. El cálculo está en `scripts/superficie_energia_libre.py`.
+
+![Superficie de energía libre](energias/superficie_energia_libre.png)
+![Perfiles de energía libre](energias/perfiles_energia_libre.png)
+
+- **Mínimo global:** coincide con el modelo de AlphaFold3.
+- **Distancia entre lóbulos:** forma un solo pozo amplio (~27–28 Å), sin estados abiertos
+  y cerrados separados.
+- **Giro de CheY:** es lo que distingue las conformaciones:
+
+  | Conformación | Giro respecto a AF3 |
+  |---|---|
+  | 1 | −3.5 ± 12° |
+  | 2 | +32 ± 21° |
+  | 3 | −44 ± 47° |
+
+  Las conformaciones 2 y 3 giran en sentidos opuestos, con un costo de ~1–1.5 kcal/mol.
+- **Islas aisladas** (~3 kcal/mol): son 1 o 2 muestras cada una y están en el límite de
+  resolución.
+
 **Precauciones:**
 - **Número de conformaciones:** la silueta es ~0.4 tanto con k = 2 como con k = 3, así
   que las posiciones de CheY forman más un continuo que estados separados. Con k = 2 queda
@@ -109,8 +137,8 @@ k-means, k = 3). Los intervalos son IC 95% por bootstrap:
 | `bioemu/repr_{cerrada,mediana,abierta}.pdb` | Estructuras representativas (solo backbone) |
 | `bioemu/lbpchey_model0.fasta` | Secuencia usada |
 | `visualizacion/ver_ensamble.pml` | Script de PyMOL |
-| `energias/` | Poblaciones y ΔG por conformación (`conformaciones.csv`), asignación de cada muestra, estructura representativa de cada conformación y figura |
-| `scripts/` | `run_bioemu.sh`, `analiza_ensamble.py`, `prepara_visualizacion.py` y `poblaciones_energias.py` |
+| `energias/` | Poblaciones y ΔG por conformación (`conformaciones.csv`), asignación de cada muestra, estructura representativa de cada conformación, superficie y perfiles de energía libre |
+| `scripts/` | `run_bioemu.sh`, `analiza_ensamble.py`, `prepara_visualizacion.py`, `poblaciones_energias.py` y `superficie_energia_libre.py` |
 | `BIOEMU.md` | Cómo funciona BioEmu por dentro, con referencias |
 | `TUTORIAL.md` | Cómo se ejecutó todo el pipeline, paso a paso |
 | `presentacion/` | Presentación sobre BioEmu y este caso (`.pptx` y `.pdf`) |

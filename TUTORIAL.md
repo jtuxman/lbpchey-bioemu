@@ -370,6 +370,57 @@ el modelo de AlphaFold3 cae en la conformacion 1
 
 ---
 
+## Paso 9. Superficie de energía libre: `scripts/superficie_energia_libre.py`
+
+```bash
+python scripts/superficie_energia_libre.py
+```
+
+Hace gráficas al estilo de la Fig. 3 del artículo de BioEmu: F = −kT·ln p en kcal/mol,
+con curvas de nivel cada 0.5 kcal/mol.
+
+**Entrada:**
+- el ensamble de backbone y el modelo de AF3;
+- opcionalmente, `asignacion_muestras.txt` del paso 8, para colorear cada muestra según
+  su conformación.
+
+**Variables (ejes):**
+- **PC1 y PC2** de las coordenadas Cα de CheY después de alinear sobre LBP.
+- **Distancia** entre los centros de los lóbulos.
+- **Giro de CheY respecto a AF3, con signo.** Se calcula así:
+  1. Se obtiene la rotación de CheY para cada muestra con el algoritmo de Kabsch.
+  2. Se convierte a vector de rotación.
+  3. Se proyecta sobre su eje principal (PCA).
+
+  No se usa la magnitud del giro porque siempre es ≥ 0, y su distribución tiene un factor
+  geométrico que movería el mínimo lejos de 0°.
+
+**Densidad:** se estima con un kernel gaussiano (`scipy.stats.gaussian_kde`), porque
+246 muestras son pocas para un histograma 2D. Las zonas con F > 4 kcal/mol quedan en
+blanco.
+
+**Salida en pantalla:**
+```
+distancia AF3 27.8 A | ensamble 27.9 ± 2.0 A
+giro de CheY sobre el eje principal (70% de la varianza): mediana 0.3°, rango -112 a 143°
+conformacion 1: giro -3.5 ± 12.5°, ...
+conformacion 2: giro 31.7 ± 21.3°, ...
+conformacion 3: giro -44.1 ± 46.9°, ...
+```
+
+**Archivos** (en `energias/`):
+
+| Archivo | Contenido |
+|---|---|
+| `superficie_energia_libre.png` | Superficies 2D: (a) PC1–PC2, (b) distancia vs. giro |
+| `perfiles_energia_libre.png` | Perfiles 1D de la distancia y del giro |
+
+> **Diferencia con el artículo:** el artículo proyecta sobre TICA, que se construye con
+> simulaciones de MD. Sin MD, aquí se usan PCA y variables físicas, así que las
+> superficies no son comparables una a una con las del artículo.
+
+---
+
 ## Problemas encontrados y soluciones
 
 | Síntoma | Causa | Solución |
