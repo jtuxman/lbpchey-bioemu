@@ -61,6 +61,44 @@ BioEmu por dentro está explicado en **[BIOEMU.md](BIOEMU.md)**.
 Las estadísticas se calcularon con el ensamble de backbone de BioEmu (antes de la
 minimización) y los centros de masa con los Cα.
 
+## Poblaciones y energías libres por conformación
+
+BioEmu solo entrega estructuras: muestras independientes, todas con el mismo peso. Las
+poblaciones se obtienen contando cuántas muestras caen en cada conformación, y las
+energías libres con ΔG = −kT·ln(pᵢ/p₁), a 300 K (kT = 0.596 kcal/mol). El cálculo está en
+`scripts/poblaciones_energias.py`.
+
+**Plegamiento.** Se usó la fracción de contactos nativos respecto al modelo de AF3,
+con la misma definición que BioEmu usa en su entrenamiento (≥ 0.65 = plegado). LBP y
+CheY están plegados en las **246/246** muestras. Por eso solo hay una cota: ΔG de
+desplegamiento > 3.3 kcal/mol.
+
+**Conformaciones.** Se agruparon según la posición de CheY tras alinear sobre LBP (PCA +
+k-means, k = 3). Los intervalos son IC 95% por bootstrap:
+
+| Conf. | Muestras | Población | ΔG (kcal/mol) | Distancia entre lóbulos | Desplazamiento de CheY vs AF3 | RMSD global vs AF3 |
+|---|---|---|---|---|---|---|
+| 1 | 172 | 69.9% (64–76) | 0 (referencia) | 27.4 ± 1.7 Å | 5.1 Å | 2.8 Å |
+| 2 | 54 | 22.0% (17–27) | +0.69 (0.52–0.89) | 29.2 ± 2.2 Å | 10.5 Å | 4.7 Å |
+| 3 | 20 | 8.1% (5–12) | +1.28 (1.04–1.59) | 28.3 ± 2.2 Å | 15.6 Å | 7.3 Å |
+
+- **Conformación 1:** el modelo de AlphaFold3 cae en ella.
+- **Conformaciones 2 y 3:** están a menos de ~2 kT y son accesibles a temperatura ambiente.
+- **Tipo de movimiento:** la distancia entre lóbulos casi no cambia; lo que varía es la
+  posición de CheY, que se desplaza o gira hasta 16 Å respecto a AF3.
+
+![Energía libre por conformación](energias/energia_libre.png)
+
+**Precauciones:**
+- **Número de conformaciones:** la silueta es ~0.4 tanto con k = 2 como con k = 3, así
+  que las posiciones de CheY forman más un continuo que estados separados. Con k = 2 queda
+  77% / 23%, con ΔG = 0.71 kcal/mol.
+- **Resolución:** con 246 muestras, una muestra equivale a 0.4%, y el ΔG máximo medible
+  es ~3.3 kcal/mol.
+- **Filtro:** BioEmu descartó 54 de 300 muestras, lo que puede sesgar las poblaciones.
+- **Error del modelo:** BioEmu reporta ~1 kcal/mol de error en energías libres, así que
+  la diferencia de 0.7 kcal/mol está dentro de ese margen.
+
 ## Archivos
 
 | Ruta | Contenido |
@@ -71,7 +109,8 @@ minimización) y los centros de masa con los Cα.
 | `bioemu/repr_{cerrada,mediana,abierta}.pdb` | Estructuras representativas (solo backbone) |
 | `bioemu/lbpchey_model0.fasta` | Secuencia usada |
 | `visualizacion/ver_ensamble.pml` | Script de PyMOL |
-| `scripts/` | `run_bioemu.sh`, `analiza_ensamble.py` y `prepara_visualizacion.py` |
+| `energias/` | Poblaciones y ΔG por conformación (`conformaciones.csv`), asignación de cada muestra, estructura representativa de cada conformación y figura |
+| `scripts/` | `run_bioemu.sh`, `analiza_ensamble.py`, `prepara_visualizacion.py` y `poblaciones_energias.py` |
 | `BIOEMU.md` | Cómo funciona BioEmu por dentro, con referencias |
 | `TUTORIAL.md` | Cómo se ejecutó todo el pipeline, paso a paso |
 | `presentacion/` | Presentación sobre BioEmu y este caso (`.pptx` y `.pdf`) |

@@ -318,6 +318,58 @@ disable ensamble           # apagar el ensamble para comparar representativas
 
 ---
 
+## Paso 8. Poblaciones y energías libres: `scripts/poblaciones_energias.py`
+
+```bash
+python scripts/poblaciones_energias.py
+```
+
+BioEmu no calcula energías. Las muestras valen todas lo mismo, así que la población
+de un estado es la fracción de muestras que caen en él, y su energía libre relativa es
+ΔG = −kT·ln(pᵢ/p₁), con T = 300 K.
+
+**Entrada:** `samples.xtc` + `topology.pdb` (ensamble de backbone) y el modelo 0 de AF3.
+Requiere `scikit-learn` (`python -m pip install scikit-learn`).
+
+**Qué hace:**
+1. **Plegamiento por lóbulo:** calcula la fracción de contactos nativos Cα–Cα respecto
+   a AF3, igual que `bioemu/training/foldedness.py`, y considera plegado ≥ 0.65. Si no hay
+   muestras desplegadas, reporta solo la cota ΔG > kT·ln(N).
+2. **Conformaciones:**
+   - alinea todo sobre LBP;
+   - hace PCA de las coordenadas Cα de CheY;
+   - agrupa con k-means sobre 3 componentes, con `N_CONF = 3`.
+   - Elige k mirando la silueta: 0.42 con k = 2 y 0.41 con k = 3.
+3. **Por conformación:** población, ΔG con IC 95% (2000 remuestreos de bootstrap),
+   distancia entre lóbulos, desplazamiento de CheY, RMSD frente a AF3 y la estructura
+   más cercana al centroide.
+
+**Salida en pantalla (resumida):**
+```
+LBP   plegadas 246/246 ...   dG_despl = > 3.3 (cota: 0 de 246 desplegadas) kcal/mol
+CheY  plegadas 246/246 ...   dG_despl = > 3.3 (cota: 0 de 246 desplegadas) kcal/mol
+conf    n           poblacion %             dG kcal/mol        dist A  desp CheY A  RMSD glob
+1     172     69.9 [64.2-75.6]       0.00 [-0.00-0.00]    27.4 ± 1.7        5.1        2.8
+2      54     22.0 [17.1-27.2]       0.69 [0.52-0.89]    29.2 ± 2.2       10.5        4.7
+3      20      8.1 [ 4.9-11.8]       1.28 [1.04-1.59]    28.3 ± 2.2       15.6        7.3
+el modelo de AlphaFold3 cae en la conformacion 1
+```
+
+**Archivos** (en `$BASE/energias/`; en este repositorio, en `energias/`):
+
+| Archivo | Contenido |
+|---|---|
+| `conformaciones.csv` | Una fila por conformación: población, ΔG con IC, descriptores |
+| `asignacion_muestras.txt` | Conformación, distancia, desplazamiento y contactos nativos de cada muestra |
+| `conformacion_{1,2,3}.pdb` | Estructura representativa de cada conformación (backbone, alineada sobre LBP) |
+| `energia_libre.png` | Mapa de energía libre en PC1–PC2 y ΔG por conformación |
+
+> **Límites:** con N muestras, la población mínima es 1/N y el ΔG máximo medible es
+> kT·ln(N): ~3.3 kcal/mol con 246 muestras. Para resolver estados más raros, genera más
+> muestras.
+
+---
+
 ## Problemas encontrados y soluciones
 
 | Síntoma | Causa | Solución |
