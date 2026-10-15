@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BioEmu · Emulación de Ensambles de Proteínas con Deep Learning</title>
+  <meta name="description" content="Presentación científica sobre BioEmu — Lewis et al., Science 2025. Aplicación a la quimera LBPCheY." />
+
+  <!-- Reveal.js CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" />
+  <!-- Highlight.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ====== ROOT DESIGN TOKENS ====== */
+    :root {
+      --bg-deep:    #05080f;
+      --bg-card:    rgba(255,255,255,0.04);
+      --bg-glass:   rgba(0,212,200,0.07);
+      --teal:       #00d4c8;
+      --teal-dark:  #00a59b;
+      --amber:      #ffb347;
+      --coral:      #ff6b6b;
+      --violet:     #b48eff;
+      --text-main:  #e8f4f8;
+      --text-muted: #8aa5b5;
+      --border:     rgba(0,212,200,0.2);
+      --glow:       0 0 30px rgba(0,212,200,0.25);
+    }
+
+    /* ====== REVEAL OVERRIDES ====== */
+    .reveal-viewport { background: var(--bg-deep); }
+    .reveal { font-family: 'Inter', sans-serif; color: var(--text-main); }
+    .reveal .slides section { text-align: left; }
+    .reveal h1, .reveal h2, .reveal h3 { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+    .reveal h1 { font-weight: 800; }
+    .reveal h2 { font-weight: 700; color: var(--teal); margin-bottom: 0.5em; }
+    .reveal h3 { font-weight: 600; color: var(--amber); }
+    .reveal p, .reveal li { font-weight: 300; line-height: 1.6; }
+    .reveal strong { color: var(--teal); font-weight: 700; }
+    .reveal em { color: var(--amber); font-style: normal; font-weight: 600; }
+    .reveal a { color: var(--teal); }
+    .reveal .progress { color: var(--teal); }
+    .reveal .slide-number { color: var(--text-muted); }
+
+    /* ====== SLIDE BACKGROUND ====== */
+    section { position: relative; }
+
+    /* ====== GRID HELPERS ====== */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; align-items: start; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.2rem; align-items: start; }
+    .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 1.6rem; align-items: start; }
+    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.6rem; align-items: start; }
+
+    /* ====== CARD ====== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+      backdrop-filter: blur(8px);
+    }
+    .card.teal  { border-color: var(--teal);   background: rgba(0,212,200,0.06); }
+    .card.amber { border-color: var(--amber);  background: rgba(255,179,71,0.06); }
+    .card.coral { border-color: var(--coral);  background: rgba(255,107,107,0.06); }
+    .card.violet{ border-color: var(--violet); background: rgba(180,142,255,0.06); }
+
+    /* ====== STAT BOX ====== */
+    .stat {
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; padding: 1rem;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    }
+    .stat .val { font-size: 2.4rem; font-weight: 800; line-height: 1; color: var(--teal); }
+    .stat .unit { font-size: 1rem; color: var(--amber); font-weight: 600; margin-top: 0.15rem; }
+    .stat .label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; line-height: 1.3; }
+    .stat.amber .val { color: var(--amber); }
+    .stat.coral .val { color: var(--coral); }
+    .stat.violet .val { color: var(--violet); }
+
+    /* ====== PIPELINE ====== */
+    .pipeline { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .pip-step {
+      background: rgba(0,212,200,0.1); border: 1px solid var(--teal);
+      border-radius: 8px; padding: 0.5rem 0.9rem; font-size: 0.82rem;
+      font-weight: 600; color: var(--teal); white-space: nowrap;
+    }
+    .pip-arrow { color: var(--text-muted); font-size: 1.2rem; flex-shrink: 0; }
+
+    /* ====== TAG ====== */
+    .tag { display: inline-block; border-radius: 999px; padding: 0.15rem 0.7rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .tag.teal   { background: rgba(0,212,200,0.15); color: var(--teal);   border: 1px solid var(--teal); }
+    .tag.amber  { background: rgba(255,179,71,0.15); color: var(--amber);  border: 1px solid var(--amber); }
+    .tag.coral  { background: rgba(255,107,107,0.15); color: var(--coral); border: 1px solid var(--coral); }
+    .tag.violet { background: rgba(180,142,255,0.15); color: var(--violet);border: 1px solid var(--violet); }
+
+    /* ====== RESULT ROW ====== */
+    .result-row { display: flex; align-items: center; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .result-row:last-child { border-bottom: none; }
+    .result-row .pct { font-size: 1.6rem; font-weight: 800; min-width: 4rem; color: var(--teal); }
+    .result-row .desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+    .result-row .desc strong { color: var(--text-main); }
+
+    /* ====== BAR ====== */
+    .bar-container { margin-top: 0.3rem; }
+    .bar-bg { background: rgba(255,255,255,0.08); border-radius: 4px; height: 8px; }
+    .bar-fill { height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--teal), var(--teal-dark)); transition: width 1s ease; }
+
+    /* ====== COVER SLIDE ====== */
+    .cover-logo { font-size: 4rem; font-weight: 900; letter-spacing: -0.04em; margin-bottom: 0; }
+    .cover-logo .bio  { color: var(--teal); }
+    .cover-logo .emu  { color: white; }
+    .cover-accent { width: 80px; height: 4px; background: linear-gradient(90deg, var(--teal), var(--amber)); border-radius: 99px; margin: 0.6rem 0 1.2rem; }
+    .cover-tagline { font-size: 1.15rem; color: var(--text-muted); font-weight: 300; max-width: 700px; }
+    .cover-ref { font-size: 0.7rem; color: rgba(255,255,255,0.3); margin-top: 2rem; font-family: 'JetBrains Mono', monospace; }
+    .cover-big-stat { font-size: 5rem; font-weight: 900; color: var(--teal); line-height: 1; }
+    .cover-big-label { font-size: 1.1rem; color: var(--text-muted); font-weight: 300; }
+
+    /* ====== IMAGE ====== */
+    .fig-img {
+      width: 100%; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .fig-caption { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.4rem; font-style: italic; text-align: center; }
+
+    /* ====== SECTION DIVIDER ====== */
+    .section-tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--teal); margin-bottom: 0.4rem; opacity: 0.7; }
+    .section-line { width: 100%; height: 1px; background: linear-gradient(90deg, var(--teal), transparent); margin-bottom: 1.2rem; }
+
+    /* ====== TABLE ====== */
+    .sci-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .sci-table th { border-bottom: 2px solid var(--teal); padding: 0.5rem 0.7rem; text-align: left; color: var(--teal); font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; }
+    .sci-table td { padding: 0.55rem 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .sci-table tr:last-child td { border-bottom: none; }
+    .sci-table .hl { color: var(--amber); font-weight: 700; }
+    .sci-table .good { color: var(--teal); font-weight: 700; }
+
+    /* ====== QUOTE ====== */
+    .sci-quote { border-left: 3px solid var(--teal); padding-left: 1.2rem; font-size: 1rem; font-style: italic; color: var(--text-muted); line-height: 1.7; }
+
+    /* ====== LIMIT ITEM ====== */
+    .limit-item { display: flex; gap: 0.8rem; align-items: flex-start; padding: 0.6rem 0; }
+    .limit-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .limit-text { font-size: 0.88rem; line-height: 1.5; color: var(--text-muted); }
+    .limit-text strong { color: var(--text-main); }
+
+    /* ====== GLOW CIRCLE ====== */
+    .glow-circle {
+      position: absolute; border-radius: 50%; pointer-events: none; opacity: 0.12;
+      filter: blur(80px); z-index: 0;
+    }
+
+    /* ====== FOOTER ====== */
+    .slide-footer { position: absolute; bottom: 12px; right: 20px; font-size: 0.6rem; color: rgba(255,255,255,0.2); font-family: 'JetBrains Mono', monospace; }
+
+    /* responsive images */
+    .reveal img { max-width: 100%; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ======================================================
+     SLIDE 1: PORTADA
+====================================================== -->
+<section data-background-color="#05080f">
+  <div style="position:relative; min-height:580px; display:flex; flex-direction:column; justify-content:center;">
+    <div class="glow-circle" style="width:500px;height:500px;background:var(--teal);top:-100px;right:-80px;"></div>
+    <div class="glow-circle" style="width:300px;height:300px;background:var(--amber);bottom:-50px;left:-50px;"></div>
+
+    <div class="tag teal" style="margin-bottom:1rem;">Journal Club · Oct 2026</div>
+
+    <div class="cover-logo"><span class="bio">Bio</span><span class="emu">Emu</span></div>
+    <div class="cover-accent"></div>
+
+    <p class="cover-tagline">
+      Emulación escalable de ensambles de equilibrio de proteínas<br/>
+      mediante aprendizaje profundo generativo
+    </p>
+
+    <div class="grid-3" style="margin-top:2rem; max-width:680px;">
+      <div class="stat">
+        <span class="val">10⁵×</span>
+        <span class="label">Más rápido que MD</span>
+      </div>
+      <div class="stat amber">
+        <span class="val">0.74</span>
+        <span class="unit">kcal/mol</span>
+        <span class="label">Error en energía libre</span>
+      </div>
+      <div class="stat violet">
+        <span class="val">246</span>
+        <span class="label">Estructuras LBPCheY generadas</span>
+      </div>
+    </div>
+
+    <div class="cover-ref">
+      Lewis et al. · Science 389, eadv9817 (2025) · Aplicado a LBPCheY (339 aa)
+    </div>
+  </div>
+  <div class="slide-footer">1 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 2: EL PROBLEMA BIOLÓGICO
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">01 · Motivación</div>
+  <div class="section-line"></div>
+  <h2>Las proteínas viven en movimiento</h2>
+  <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.2rem;">Una estructura experimental es <strong>una fotografía</strong>, no la distribución completa</p>
+
+  <div class="grid-2" style="gap:2rem;">
+    <div>
+      <div class="card teal" style="margin-bottom:1rem;">
+        <h3 style="font-size:0.9rem; margin:0 0 0.5rem;">¿Qué ignora una sola estructura?</h3>
+        <ul style="font-size:0.82rem; margin:0; padding-left:1.2rem; color:var(--text-muted);">
+          <li>Movimientos de dominio (abierto ↔ cerrado)</li>
+          <li>Cavidades crípticas de unión a ligandos</li>
+          <li>Regiones intrínsecamente desordenadas</li>
+          <li>Poblaciones de estados menoritarios</li>
+        </ul>
+      </div>
+
+      <div class="card amber">
+        <h3 style="font-size:0.9rem; margin:0 0 0.5rem;">La pregunta científica</h3>
+        <p style="font-size:0.82rem; margin:0; color:var(--text-muted); line-height:1.5;">
+          En la quimera <strong>LBPCheY</strong>: CheY y LBP se pliegan bien por separado,
+          pero <em>¿se mueven los lóbulos uno respecto al otro?</em>
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <div style="background: rgba(0,212,200,0.05); border:1px solid var(--border); border-radius:12px; padding:1.4rem; text-align:center;">
+        <div style="font-size:3rem; margin-bottom:0.5rem;">🧬</div>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin:0 0 0.8rem;">
+          <strong style="color:var(--text-main);">LBPCheY — 339 residuos</strong><br/>
+          Quimera diseñada: dominio sensor (LBP) + regulador de respuesta (CheY)
+        </p>
+        <div style="display:flex; gap:0.5rem; flex-direction:column; font-size:0.75rem;">
+          <div style="background:rgba(0,212,200,0.12); border-radius:6px; padding:0.4rem 0.7rem; color:var(--teal);">LBP N-terminal (1–140)</div>
+          <div style="background:rgba(255,179,71,0.12); border-radius:6px; padding:0.4rem 0.7rem; color:var(--amber);">CheY insertado (141–243)</div>
+          <div style="background:rgba(0,212,200,0.12); border-radius:6px; padding:0.4rem 0.7rem; color:var(--teal);">LBP C-terminal (244–339)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">2 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 3: ¿POR QUÉ NO BASTA MD?
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">02 · El cuello de botella</div>
+  <div class="section-line"></div>
+  <h2>¿Por qué no basta la Dinámica Molecular?</h2>
+
+  <div class="grid-2" style="gap:2rem; margin-top:0.5rem;">
+    <div>
+      <div class="card" style="margin-bottom:1rem;">
+        <h3 style="font-size:0.85rem; margin:0 0 0.6rem; color:var(--text-muted);">Lo que MD hace bien</h3>
+        <ul style="font-size:0.8rem; margin:0; padding-left:1.2rem; color:var(--text-muted);">
+          <li>Trayectorias temporales realistas</li>
+          <li>Mecanismos de transición</li>
+          <li>Fuerzas atómicas explícitas</li>
+        </ul>
+      </div>
+      <div class="card coral">
+        <h3 style="font-size:0.85rem; margin:0 0 0.6rem;">El problema de muestreo</h3>
+        <ul style="font-size:0.8rem; margin:0; padding-left:1.2rem; color:var(--text-muted);">
+          <li>Proteínas quedan <strong>atrapadas en mínimos</strong> de energía</li>
+          <li>Transiciones lentas: <strong>ms–µs</strong> de simulación</li>
+          <li>Cada nanosegundo cuesta <strong>cómputo intensivo</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div>
+      <!-- Energy landscape diagram -->
+      <div style="background: rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:1.2rem; text-align:center;">
+        <svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:280px;">
+          <!-- Grid lines -->
+          <line x1="20" y1="140" x2="260" y2="140" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="20" y1="20" x2="20" y2="140" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <!-- Labels -->
+          <text x="135" y="155" fill="rgba(255,255,255,0.4)" font-size="9" text-anchor="middle" font-family="Inter">Coordenada de reacción</text>
+          <text x="12" y="80" fill="rgba(255,255,255,0.4)" font-size="9" text-anchor="middle" font-family="Inter" transform="rotate(-90 12 80)">Energía libre</text>
+          <!-- Landscape curve -->
+          <path d="M 30 80 Q 50 130 80 110 Q 95 100 100 60 Q 110 25 140 70 Q 165 110 200 115 Q 220 120 240 90" 
+                stroke="#00d4c8" stroke-width="2.5" fill="none"/>
+          <!-- State A -->
+          <circle cx="80" cy="110" r="5" fill="#00d4c8"/>
+          <text x="80" y="128" fill="#00d4c8" font-size="8" text-anchor="middle" font-family="Inter">Estado A</text>
+          <!-- State B -->
+          <circle cx="200" cy="115" r="5" fill="#ffb347"/>
+          <text x="200" y="133" fill="#ffb347" font-size="8" text-anchor="middle" font-family="Inter">Estado B</text>
+          <!-- Barrier -->
+          <circle cx="140" cy="70" r="3" fill="rgba(255,107,107,0.8)"/>
+          <text x="140" y="50" fill="rgba(255,107,107,0.9)" font-size="8" text-anchor="middle" font-family="Inter">Barrera de energía</text>
+          <line x1="140" y1="53" x2="140" y2="65" stroke="rgba(255,107,107,0.6)" stroke-width="1" stroke-dasharray="2,2"/>
+          <!-- MD arrow (trapped) -->
+          <text x="75" y="95" fill="rgba(255,255,255,0.4)" font-size="7" text-anchor="middle" font-family="Inter">MD atrapada</text>
+        </svg>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.5rem;">Paisaje de energía libre — barrera = tiempo de muestreo</div>
+      </div>
+
+      <div class="card teal" style="margin-top:1rem; padding:0.9rem 1.2rem;">
+        <p style="font-size:0.8rem; margin:0; color:var(--text-muted);">
+          <strong>BioEmu aprende la distribución</strong> y genera muestras independientes —
+          sin necesidad de simular la trayectoria entre estados.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">3 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 4: QUÉ ES BIOEMU
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">03 · La solución</div>
+  <div class="section-line"></div>
+  <h2>BioEmu en una diapositiva</h2>
+
+  <div style="margin-bottom:1.4rem;">
+    <div class="pipeline" style="justify-content:center; font-size:0.88rem;">
+      <div class="pip-step">🧬 Secuencia</div>
+      <span class="pip-arrow">→</span>
+      <div class="pip-step">Evoformer (AF2)</div>
+      <span class="pip-arrow">→</span>
+      <div class="pip-step">Modelo de difusión</div>
+      <span class="pip-arrow">→</span>
+      <div class="pip-step">Ensemble de estructuras</div>
+      <span class="pip-arrow">→</span>
+      <div class="pip-step" style="background:rgba(255,179,71,0.1); border-color:var(--amber); color:var(--amber);">ΔG, ΔΔG, poblaciones</div>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:1.2rem;">
+    <div class="card teal">
+      <h3 style="font-size:0.8rem; margin:0 0 0.5rem;">Evoformer</h3>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Encoder de AlphaFold2: representaciones <em>single</em> (por residuo) y <em>pair</em> (entre pares). Captura contexto evolutivo y estructural.</p>
+    </div>
+    <div class="card amber">
+      <h3 style="font-size:0.8rem; margin:0 0 0.5rem; color:var(--amber);">Score model</h3>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Guía la eliminación de ruido iterativamente (30–50 pasos). Condicionado por las representaciones del Evoformer.</p>
+    </div>
+    <div class="card violet">
+      <h3 style="font-size:0.8rem; margin:0 0 0.5rem; color:var(--violet);">Muestras ~ equilibrio</h3>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Frecuencia de muestreo ≈ poblaciones de equilibrio. <strong>Miles de estructuras/hora</strong> en 1 GPU.</p>
+    </div>
+  </div>
+
+  <div class="card" style="border-color:var(--border); padding:0.9rem 1.4rem;">
+    <div style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+      <div>
+        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em;">Entrenamiento</div>
+        <div style="font-size:0.82rem; margin-top:0.2rem;">
+          <span class="tag teal" style="margin-right:0.5rem;">AFDB</span> diversidad estructural inicial
+        </div>
+      </div>
+      <div style="color:var(--text-muted);">+</div>
+      <div>
+        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em;">Física</div>
+        <div style="font-size:0.82rem; margin-top:0.2rem;">
+          <span class="tag amber" style="margin-right:0.5rem;">&gt;200 ms MD</span> simulaciones acumuladas
+        </div>
+      </div>
+      <div style="color:var(--text-muted);">+</div>
+      <div>
+        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em;">Calibración</div>
+        <div style="font-size:0.82rem; margin-top:0.2rem;">
+          <span class="tag violet" style="margin-right:0.5rem;">PPFT</span> 500k mediciones MEGAscale
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">4 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 5: NUESTRO EXPERIMENTO — LBPCheY
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">04 · Nuestro experimento</div>
+  <div class="section-line"></div>
+  <h2>Aplicando BioEmu a LBPCheY</h2>
+
+  <div class="grid-2" style="gap:2rem; align-items:start;">
+    <div>
+      <div class="card teal" style="margin-bottom:1rem;">
+        <h3 style="font-size:0.85rem; margin:0 0 0.6rem;">La proteína: LBPCheY (339 aa)</h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.6;">
+          Quimera donde el dominio regulador de respuesta <strong>CheY</strong> está insertado dentro de la proteína de unión a leucina <strong>LBP</strong>. Ambos dominios se pliegan bien por separado. La pregunta: <em>¿hay movimiento relativo entre lóbulos?</em>
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem;">
+        <h3 style="font-size:0.85rem; margin:0 0 0.6rem; color:var(--text-muted);">Pipeline utilizado</h3>
+        <div style="font-size:0.75rem; color:var(--text-muted);">
+          <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.4rem;">
+            <span class="tag teal">1</span> AlphaFold3 Server → modelo 0, pTM = <strong>0.81</strong>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.4rem;">
+            <span class="tag amber">2</span> BioEmu v1.4.1 → <strong>300 muestras</strong> (246 pasan filtro)
+          </div>
+          <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.4rem;">
+            <span class="tag violet">3</span> HPacker + OpenMM → cadenas laterales + minimización
+          </div>
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="tag coral">4</span> Análisis: RMSD Cα por lóbulo + distancia centros de masa
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card amber" style="text-align:center; padding:1.4rem;">
+        <div style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.8rem;">Modelo AlphaFold3 (referencia)</div>
+        <div style="font-size:5rem; margin: 0.5rem 0;">🧬</div>
+        <div style="font-size:0.78rem; color:var(--text-muted);">
+          <div style="margin-bottom:0.3rem;"><strong style="color:var(--text-main);">pTM = 0.81</strong> · alta confianza global</div>
+          <div style="background:rgba(0,212,200,0.08); border-radius:6px; padding:0.4rem 0.7rem; margin-top:0.6rem; font-size:0.72rem;">
+            Residuos 1–140 · <span style="color:var(--teal);">LBP N-term</span>
+          </div>
+          <div style="background:rgba(255,179,71,0.08); border-radius:6px; padding:0.4rem 0.7rem; margin-top:0.3rem; font-size:0.72rem;">
+            Residuos 141–243 · <span style="color:var(--amber);">CheY</span>
+          </div>
+          <div style="background:rgba(0,212,200,0.08); border-radius:6px; padding:0.4rem 0.7rem; margin-top:0.3rem; font-size:0.72rem;">
+            Residuos 244–339 · <span style="color:var(--teal);">LBP C-term</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">5 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 6: RESULTADO 1 — RMSD POR LÓBULO
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">05 · Resultados — Flexibilidad estructural</div>
+  <div class="section-line"></div>
+  <h2>¿Cuánto se mueve cada lóbulo?</h2>
+
+  <div class="grid-1-2" style="gap:2rem; align-items:start;">
+    <div>
+      <table class="sci-table">
+        <thead>
+          <tr><th>Medida</th><th>Media ± SD</th><th>Rango</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>RMSD CheY</strong></td><td class="good">0.81 ± 0.30 Å</td><td>0.40–2.35</td></tr>
+          <tr><td><strong>RMSD LBP</strong></td><td class="hl">2.30 ± 1.87 Å</td><td>0.76–18.7</td></tr>
+          <tr><td><strong>RMSD global</strong></td><td class="hl">3.56 ± 2.32 Å</td><td>0.79–21.4</td></tr>
+          <tr><td><strong>Dist. centros</strong></td><td>27.9 ± 2.0 Å</td><td>23.0–36.2</td></tr>
+        </tbody>
+      </table>
+
+      <div class="card teal" style="margin-top:1rem; padding:0.9rem 1.2rem;">
+        <p style="font-size:0.78rem; margin:0; color:var(--text-muted); line-height:1.6;">
+          <strong>CheY permanece rígido</strong> (~0.8 Å) — su fold es muy estable.
+          <strong>LBP tiene mayor variabilidad</strong> (hasta 18.7 Å) con algunas muestras muy
+          alejadas del modelo AF3. La diferencia RMSD global &gt; RMSD lóbulo confirma
+          <em>movimiento relativo entre dominios</em>.
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <img src="repo_figs/rmsd_lobulos.png" class="fig-img" alt="RMSD por lóbulo" />
+      <div class="fig-caption">
+        Distribución de RMSD de Cα por lóbulo vs. modelo AF3 (n=246 estructuras BioEmu)
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">6 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 7: RESULTADO 2 — APERTURA ENTRE LÓBULOS
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">06 · Resultados — Movimiento inter-dominio</div>
+  <div class="section-line"></div>
+  <h2>Los lóbulos se separan hasta 13 Å</h2>
+
+  <div class="grid-2" style="gap:2rem; align-items:start;">
+    <div>
+      <img src="repo_figs/apertura_lobulos.png" class="fig-img" alt="Apertura entre lóbulos" />
+      <div class="fig-caption">
+        Distribución de la distancia entre centros de masa de CheY y LBP (Cα, n=246)
+      </div>
+    </div>
+
+    <div>
+      <div class="card violet" style="margin-bottom:1rem;">
+        <h3 style="font-size:0.9rem; margin:0 0 0.5rem;">Lo que vemos</h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.6;">
+          La distancia entre centros de los lóbulos varía entre <strong>23 y 36.2 Å</strong> —
+          una diferencia de <em>~13 Å</em>. La distribución es <strong>unimodal y ancha</strong>,
+          indicando movimiento continuo (no dos estados discretos).
+        </p>
+      </div>
+
+      <div class="card amber" style="margin-bottom:1rem;">
+        <h3 style="font-size:0.9rem; margin:0 0 0.5rem;">Interpretación</h3>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin:0; line-height:1.6;">
+          La quimera exhibe <strong>flexibilidad conformacional significativa</strong> en su
+          arquitectura de dominio, coherente con la naturaleza de proteínas de unión a
+          sustratos tipo LBP que operan mediante movimientos de lóbulos.
+        </p>
+      </div>
+
+      <div class="card teal">
+        <h3 style="font-size:0.9rem; margin:0 0 0.4rem;">¿Por qué importa?</h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.5;">
+          Sin BioEmu, esto requeriría <strong>microsegundos de MD</strong>. Aquí se obtiene
+          en <strong>horas en 1 GPU</strong>, mostrando directamente el valor práctico del método.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">7 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 8: RESULTADO 3 — SUPERFICIE DE ENERGÍA LIBRE
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">07 · Resultados — Paisaje de energía libre</div>
+  <div class="section-line"></div>
+  <h2>Superficie de energía libre de LBPCheY</h2>
+
+  <div class="grid-2-1" style="gap:1.5rem; align-items:start;">
+    <div>
+      <img src="repo_figs/superficie_energia_libre.png" class="fig-img" alt="Superficie energía libre" />
+      <div class="fig-caption">
+        Paisaje de energía libre 2D. Izq: posición de CheY en espacio PCA (PC1=47%, PC2=27%).
+        Der: variables físicas — giro de CheY vs. distancia entre lóbulos. ⭐ = modelo AF3.
+      </div>
+    </div>
+
+    <div>
+      <div class="card teal" style="margin-bottom:0.8rem;">
+        <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.3rem;">3 conformaciones (PCA + k-means)</div>
+        <div style="display:flex; flex-direction:column; gap:0.4rem; font-size:0.75rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <div style="width:10px;height:10px;border-radius:50%;background:#f97316;flex-shrink:0;"></div>
+            <span style="color:var(--text-muted);">Conformación 1 — estado principal</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <div style="width:10px;height:10px;border-radius:50%;background:white;flex-shrink:0;"></div>
+            <span style="color:var(--text-muted);">Conformación 2 — similar a AF3</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <div style="width:10px;height:10px;border-radius:50%;background:#ef4444;flex-shrink:0;"></div>
+            <span style="color:var(--text-muted);">Conformación 3 — estados raros</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card amber" style="margin-bottom:0.8rem;">
+        <p style="font-size:0.75rem; color:var(--text-muted); margin:0; line-height:1.5;">
+          <strong>AF3 (⭐)</strong> cae en el mínimo de energía libre — coherente con que predice la conformación más estable.
+        </p>
+      </div>
+
+      <div class="card violet">
+        <p style="font-size:0.75rem; color:var(--text-muted); margin:0; line-height:1.5;">
+          Hay <strong>estados accesorios</strong> en la superficie (islas verdes en esquinas) — conformaciones minoritarias accesibles térmicamente a 300 K.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">8 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 9: RESULTADO 4 — PERFILES 1D
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">08 · Resultados — Perfiles de energía libre</div>
+  <div class="section-line"></div>
+  <h2>Perfiles 1D: distancia y giro de CheY</h2>
+
+  <div class="grid-1-2" style="gap:2rem; align-items:start;">
+    <div>
+      <div class="card teal" style="margin-bottom:1rem;">
+        <h3 style="font-size:0.85rem; margin:0 0 0.6rem;">Lectura de los perfiles</h3>
+        <ul style="font-size:0.78rem; margin:0; padding-left:1.2rem; color:var(--text-muted); line-height:1.7;">
+          <li><strong>Mínimo izquierdo:</strong> distancia ~27.5 Å — estado más poblado</li>
+          <li><strong>La curva sube</strong> gradualmente al alejarse — sin barrera abrupta</li>
+          <li><strong>Giro CheY:</strong> el mínimo está en 0° (modelo AF3), con estados alternos a ±100°</li>
+          <li>ΔG de desplegamiento &gt; <strong>3.3 kcal/mol</strong> — ambos dominios estables</li>
+        </ul>
+      </div>
+
+      <div class="card amber">
+        <h3 style="font-size:0.85rem; margin:0 0 0.4rem;">Cota de estabilidad</h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin:0;">
+          Las 246/246 muestras están plegadas (fracción de contactos nativos ≥0.65).
+          <em>BioEmu confirma que la quimera mantiene ambos folds en equilibrio</em>.
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <img src="repo_figs/perfiles_energia_libre.png" class="fig-img" alt="Perfiles 1D" />
+      <div class="fig-caption">
+        Perfiles de energía libre 1D. Izq: distancia entre centros de lóbulos.
+        Der: giro de CheY respecto a AF3. ΔG = −kT·ln(pᵢ/p₁), T=300 K.
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">9 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 10: VALIDACIÓN DEL PAPER — CONFORMACIONES
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">09 · Validación del método (Lewis et al.)</div>
+  <div class="section-line"></div>
+  <h2>¿Qué tan bien predice BioEmu?</h2>
+  <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Benchmarks del artículo en proteínas con estados conocidos experimentalmente</p>
+
+  <div class="grid-2" style="gap:1.5rem; align-items:start;">
+    <div>
+      <div style="margin-bottom:1rem;">
+        <div class="result-row">
+          <div class="pct">83%</div>
+          <div class="desc"><strong>Movimientos entre dominios</strong><br/>adenilato quinasa, receptores — RMSD ≤3 Å</div>
+        </div>
+        <div class="bar-container"><div class="bar-bg"><div class="bar-fill" style="width:83%"></div></div></div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div class="result-row">
+          <div class="pct">81%</div>
+          <div class="desc"><strong>Desplegamiento local</strong><br/>estados desplegados conocidos</div>
+        </div>
+        <div class="bar-container"><div class="bar-bg"><div class="bar-fill" style="width:81%"></div></div></div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div class="result-row">
+          <div class="pct">86%</div>
+          <div class="desc"><strong>Cavidades crípticas</strong><br/>estado holo (con ligando)</div>
+        </div>
+        <div class="bar-container"><div class="bar-bg"><div class="bar-fill" style="width:86%"></div></div></div>
+      </div>
+      <div>
+        <div class="result-row">
+          <div class="pct" style="color:var(--coral);">56%</div>
+          <div class="desc"><strong>Cavidades crípticas</strong><br/>estado apo — sesgo del PDB hacia estados holo</div>
+        </div>
+        <div class="bar-container"><div class="bar-bg"><div class="bar-fill" style="width:56%; background:linear-gradient(90deg, var(--coral), rgba(255,107,107,0.5));"></div></div></div>
+      </div>
+    </div>
+
+    <div>
+      <img src="paper_figs/fig2_conformations.png" class="fig-img" alt="Fig 2 BioEmu conformaciones" style="max-height:340px; object-fit:contain;" />
+      <div class="fig-caption">Fig. 2 Lewis et al. — verde: BioEmu; gris: MD de referencia. Adenilato quinasa y cavidades crípticas.</div>
+    </div>
+  </div>
+  <div class="slide-footer">10 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 11: VALIDACIÓN — ENERGÍA LIBRE
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">10 · Validación del método — Energía libre</div>
+  <div class="section-line"></div>
+  <h2>¿Reproduce los paisajes de energía libre?</h2>
+
+  <div class="grid-2" style="gap:2rem; align-items:start;">
+    <div>
+      <div class="grid-2" style="gap:1rem; margin-bottom:1.2rem;">
+        <div class="stat" style="padding:1.2rem;">
+          <span class="val">0.74</span>
+          <span class="unit">kcal/mol MAE</span>
+          <span class="label">12 proteínas rápido-plegamiento (DESRES)</span>
+        </div>
+        <div class="stat amber" style="padding:1.2rem;">
+          <span class="val">10⁴–10⁵×</span>
+          <span class="unit">más rápido</span>
+          <span class="label">que MD para obtener la misma distribución</span>
+        </div>
+      </div>
+
+      <div class="card teal" style="margin-bottom:0.8rem;">
+        <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.6;">
+          <strong>Contexto clave:</strong> el error experimental típico en mediciones calorimétricas de ΔG es ~1 kcal/mol.
+          Un MAE de 0.74 kcal/mol significa que <em>BioEmu está dentro del ruido experimental</em>.
+        </p>
+      </div>
+
+      <div class="card" style="padding:0.9rem 1.2rem;">
+        <p style="font-size:0.75rem; color:var(--text-muted); margin:0; line-height:1.5;">
+          17 dominios CATH: MAE ~0.9 kcal/mol · Complexina II (IDP): reproduce contenido helicoidal y Rg · CD9 (tetraspanina): reproduce transición abierto/cerrado
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <img src="paper_figs/fig3_desres.png" class="fig-img" alt="Fig 3 DESRES proteins" />
+      <div class="fig-caption">
+        Fig. 3A — Proteínas DESRES. Verde: BioEmu; gris: MD de referencia. 
+        Superficies de energía libre sobre componentes independientes lentos (TIC).
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">11 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 12: ESTABILIDAD Y MUTACIONES
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">11 · Validación del método — Estabilidad</div>
+  <div class="section-line"></div>
+  <h2>Predicción de estabilidad y efecto mutacional</h2>
+
+  <div class="grid-2" style="gap:1.5rem; align-items:start;">
+    <div>
+      <div class="card teal" style="margin-bottom:1rem;">
+        <h3 style="font-size:0.85rem; margin:0 0 0.6rem;">PPFT: innovación técnica</h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.6;">
+          <em>Property-Prediction Fine-Tuning</em>: entrena el modelo de difusión con
+          <strong>valores de expectativa experimentales</strong> (estabilidades), sin necesitar
+          estructuras medidas de cada mutante. Entrenado en 502,442 mutantes de MEGAscale.
+        </p>
+      </div>
+
+      <div class="grid-2" style="gap:0.8rem; margin-bottom:1rem;">
+        <div class="stat" style="padding:1rem;">
+          <span class="val">&lt;0.9</span>
+          <span class="unit">kcal/mol MAE</span>
+          <span class="label">ΔG (estabilidad global)</span>
+        </div>
+        <div class="stat amber" style="padding:1rem;">
+          <span class="val">&lt;0.8</span>
+          <span class="unit">kcal/mol MAE</span>
+          <span class="label">ΔΔG (efecto de mutaciones)</span>
+        </div>
+      </div>
+
+      <div class="card violet" style="padding:0.9rem 1.2rem;">
+        <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.5;">
+          <strong>Interpretabilidad:</strong> a diferencia de predictores de "caja negra", BioEmu genera el ensemble que explica por qué una mutación desestabiliza — se puede visualizar el cambio estructural.
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <img src="paper_figs/fig4_stability.png" class="fig-img" alt="Estabilidad Fig 4" />
+      <div class="fig-caption">
+        Fig. 4 — BioEmu vs. experimental (MEGAscale). Izq: ΔG; Der: ΔΔG. Color indica similitud con el set de entrenamiento. Correlación Spearman ~0.6.
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">12 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 13: LÍMITES Y LECTURA CRÍTICA
+====================================================== -->
+<section data-background-color="#05080f">
+  <div class="section-tag">12 · Lectura crítica</div>
+  <div class="section-line"></div>
+  <h2>Límites honestos del método</h2>
+
+  <div class="grid-2" style="gap:2rem; align-items:start;">
+    <div>
+      <h3 style="font-size:0.85rem; color:var(--coral); margin-bottom:0.8rem;">Lo que BioEmu NO hace</h3>
+      <div class="limit-item">
+        <span class="limit-icon">🔗</span>
+        <div class="limit-text"><strong>Una sola cadena:</strong> no modela complejos proteína-proteína ni proteína-ligando explícitamente</div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-icon">🧱</span>
+        <div class="limit-text"><strong>Sin membranas:</strong> entrenado en proteínas solubles; proteínas de membrana son un reto</div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-icon">⏱️</span>
+        <div class="limit-text"><strong>Sin cinética:</strong> predice poblaciones en equilibrio, no velocidades de transición ni mecanismos</div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-icon">🌡️</span>
+        <div class="limit-text"><strong>~300 K fija:</strong> sin variación de pH, temperatura o presión</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.85rem; color:var(--teal); margin-bottom:0.8rem;">Lo que BioEmu SÍ aporta</h3>
+      <div class="limit-item">
+        <span class="limit-icon">⚡</span>
+        <div class="limit-text"><strong>Velocidad:</strong> 10⁴–10⁵× más rápido que MD para muestreo de equilibrio</div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-icon">📊</span>
+        <div class="limit-text"><strong>Poblaciones plausibles:</strong> frecuencia de muestreo ≈ termodinámica de equilibrio</div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-icon">🔍</span>
+        <div class="limit-text"><strong>Cavidades crípticas:</strong> relevante para drug discovery (86% éxito en estados holo)</div>
+      </div>
+      <div class="limit-item">
+        <span class="limit-icon">🧪</span>
+        <div class="limit-text"><strong>Diseño de proteínas:</strong> ΔΔG &lt;0.8 kcal/mol MAE para screening mutacional rápido</div>
+      </div>
+
+      <div class="sci-quote" style="margin-top:1.2rem; font-size:0.78rem;">
+        "BioEmu complementa a MD como generador rápido de estados iniciales y de distribuciones de equilibrio. No la reemplaza, la democratiza."
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer">13 / 14</div>
+</section>
+
+<!-- ======================================================
+     SLIDE 14: CONCLUSIONES Y VISIÓN FUTURA
+====================================================== -->
+<section data-background-color="#05080f">
+  <div style="position:relative; min-height:560px; display:flex; flex-direction:column; justify-content:center;">
+    <div class="glow-circle" style="width:400px;height:400px;background:var(--teal);top:-100px;left:-80px;"></div>
+    <div class="glow-circle" style="width:300px;height:300px;background:var(--violet);bottom:-50px;right:50px;"></div>
+
+    <div class="section-tag">13 · Conclusiones</div>
+    <div class="section-line"></div>
+    <h2>¿Qué aprendimos?</h2>
+
+    <div class="grid-2" style="gap:2rem; margin-bottom:1.5rem;">
+      <div>
+        <div class="card teal" style="margin-bottom:1rem;">
+          <h3 style="font-size:0.85rem; margin:0 0 0.5rem;">Del paper (Lewis et al.)</h3>
+          <ul style="font-size:0.78rem; margin:0; padding-left:1.2rem; color:var(--text-muted); line-height:1.6;">
+            <li>BioEmu genera ensambles de equilibrio con MAE ~0.74–0.9 kcal/mol</li>
+            <li>10⁴–10⁵× más rápido que MD en muestreo de estados</li>
+            <li>PPFT calibra estabilidades sin estructuras experimentales</li>
+            <li>Interpreta efecto de mutaciones estructuralmente</li>
+          </ul>
+        </div>
+      </div>
+
+      <div>
+        <div class="card amber" style="margin-bottom:1rem;">
+          <h3 style="font-size:0.85rem; margin:0 0 0.5rem; color:var(--amber);">De nuestro experimento (LBPCheY)</h3>
+          <ul style="font-size:0.78rem; margin:0; padding-left:1.2rem; color:var(--text-muted); line-height:1.6;">
+            <li>CheY es rígido (RMSD ~0.8 Å); LBP más flexible (hasta 18.7 Å)</li>
+            <li>Movimiento relativo entre lóbulos: rango de ~13 Å</li>
+            <li>Ambos dominios estables (ΔG desplegamiento &gt;3.3 kcal/mol)</li>
+            <li>3 conformaciones accesibles en el paisaje de energía libre</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card violet" style="padding:1rem 1.4rem;">
+      <div style="display:flex; align-items:center; gap:1rem;">
+        <div style="font-size:1.5rem;">🔭</div>
+        <div>
+          <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:0.3rem;">Próximos pasos posibles</div>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.5;">
+            Modelar LBPCheY con ligando (leucina) · Comparar con MD explícita · Usar BioEmu para screening de mutantes estabilizadores · Extender a proteínas de señalización homólogas.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-ref" style="margin-top:1.5rem;">
+      Lewis et al. · Science 389, eadv9817 (2025) · Repositorio: github.com/jtuxman/lbpchey-bioemu
+    </div>
+  </div>
+  <div class="slide-footer">14 / 14</div>
+</section>
+
+</div><!-- .slides -->
+</div><!-- .reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: false,
+    transition: 'fade',
+    transitionSpeed: 'fast',
+    backgroundTransition: 'none',
+    controls: true,
+    progress: true,
+    center: false,
+    width: 1200,
+    height: 700,
+    margin: 0.06,
+    plugins: [ RevealHighlight, RevealNotes ],
+    keyboard: {
+      // custom: none, use defaults
+    }
+  });
+</script>
+</body>
+</html>

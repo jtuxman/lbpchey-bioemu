@@ -141,7 +141,7 @@ suficientes. El cálculo está en `scripts/superficie_energia_libre.py`.
 | `scripts/` | `run_bioemu.sh`, `analiza_ensamble.py`, `prepara_visualizacion.py`, `poblaciones_energias.py` y `superficie_energia_libre.py` |
 | `BIOEMU.md` | Cómo funciona BioEmu por dentro, con referencias |
 | `TUTORIAL.md` | Cómo se ejecutó todo el pipeline, paso a paso |
-| `presentacion/` | Presentación sobre BioEmu y este caso (`.pptx` y `.pdf`); `presentacion/web/` tiene la versión de 8 min en HTML con guion |
+| `presentacion/` | Presentación sobre BioEmu y este caso (`.pptx` y `.pdf`); `presentacion/web/` tiene las presentaciones HTML (`index_v1/v2/v3.html`) y el guion de 8 min |
 
 ## Visualizar en PyMOL
 
